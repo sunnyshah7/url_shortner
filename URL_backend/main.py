@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 import string
 import random
+from mangum import Mangum
 
 
 DATABASE_URL = "sqlite:///urls.db"
@@ -178,3 +179,5 @@ def delete_url(
     return {
         "message": "URL deleted successfully"
     }
+
+handler = Mangum(app)
