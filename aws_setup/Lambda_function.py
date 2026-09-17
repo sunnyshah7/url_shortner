@@ -119,7 +119,7 @@ def create_url(event, context):
         )
 
         # Create short URL
-        short_url = f"https://url.gauravtotla.in/{short_code}"
+        short_url = f"https://url.sunnycodes.in/{short_code}"
 
         # Return response
         return {

@@ -29,7 +29,7 @@ echo "Pip version:"
 pip3 --version
 
 # Clone repository
-REPO_URL="https://github.com/GauravT-07/URL_Shortner.git"
+REPO_URL="https://github.com/sunnyshah7/URL_Shortner.git"
 PROJECT_DIR="$HOME/URL_Shortner"
 
 if [ -d "$PROJECT_DIR" ]; then
