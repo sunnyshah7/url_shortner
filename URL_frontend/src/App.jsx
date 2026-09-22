@@ -448,7 +448,7 @@ function App() {
               filteredUrls.map((item, index) => {
 
                 const shortUrl =
-                  item.short_url || `https://sunnycodes.in${API_URL}${item.short_code}`;
+                  item.short_url || `https://jxyc2ymwoe.execute-api.ap-south-1.amazonaws.com/${API_URL}${item.short_code}`;
 
                 return (
                   <div
