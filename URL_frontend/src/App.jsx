@@ -19,7 +19,7 @@ import "./App.css";
 
 // const API_URL = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000")
 //   .replace(/\/$/, "");
-const API_URL = "https://jxyc2ymwoe.execute-api.ap-south-1.amazonaws.com";
+const API_URL = "https://url.sunnycodes.in";
 
 function App() {
   const [url, setUrl] = useState("");
