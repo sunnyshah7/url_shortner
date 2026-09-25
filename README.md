@@ -296,6 +296,3 @@ This project demonstrates the common transition from a single application to a d
 - API security, rate limiting, validation, and HTTPS should be handled in production.
 - For public deployment, use a proper custom domain and set the short URL base to the deployed API domain.
 
-## License
-
-This project does not currently include a license file. Add one before publishing or sharing it beyond personal use.
