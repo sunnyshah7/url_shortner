@@ -1,102 +1,160 @@
 # URL Shortener
 
-A full-stack URL shortener built with React, FastAPI, and SQLite. Paste a long URL into the web interface to create a compact link, copy it, search previously created links, or remove links that are no longer needed.
+A lightweight URL shortener that was first built as a monolithic full-stack application and later adapted into a cloud-based microservices-style deployment. The project includes a React frontend, a FastAPI backend, and AWS-friendly serverless logic using API Gateway, Lambda, and DynamoDB. It can run locally for development and can also be deployed on EC2 or in a cloud-native architecture with Netlify and AWS services.
 
-The repository also includes shell scripts for deploying the application to an Ubuntu EC2 instance behind Nginx.
+## Overview
 
-![URL Shortener interface](URL_frontend/src/assets/hero.png)
+This project lets users:
 
-## Features
+- shorten long URLs into compact short links
+- redirect short links back to the original destination
+- view stored URLs
+- delete old or unused links
+- deploy the frontend and backend in different environments
 
-- Creates six-character, alphanumeric short codes for valid HTTP(S) URLs.
-- Redirects a short code to its original URL.
-- Returns an existing code when the same original URL is shortened again.
-- Lists, filters, copies, refreshes, and deletes shortened URLs from the UI.
-- Validates submitted URLs through the browser and FastAPI/Pydantic.
-- Supports a configurable frontend API endpoint using `VITE_API_URL`.
-- Includes EC2 setup scripts for FastAPI as a systemd service and React behind Nginx.
+The repository contains two major approaches:
 
-## Architecture
+1. Monolithic app setup
+   - React frontend + FastAPI backend + SQLite database
+   - Suitable for local development and single-server deployment
 
-```text
-Browser
-  │
-  ├── React + Vite frontend
-  │     └── /api/* in production
-  │
-  └── Nginx (production)
-          ├── serves the React build
-          └── proxies /api/* to FastAPI on port 8000
-                                      │
-                                      └── SQLite database (urls.db)
-```
+2. Microservices / serverless architecture
+   - Frontend hosted on Netlify
+   - API exposed through AWS API Gateway
+   - Backend logic handled by AWS Lambda
+   - Data stored in DynamoDB
 
-For local development, the frontend defaults to `http://127.0.0.1:8000` and calls FastAPI directly. In the included Nginx deployment configuration, the frontend uses `/api`, which Nginx forwards to the FastAPI service.
+This makes it a good example of evolving a traditional monolith into smaller, independently deployable services.
 
-## Tech stack
+## Tech Stack
 
-| Area | Technology |
+| Layer | Technology |
 | --- | --- |
-| Frontend | React 19, Vite 8, Lucide React |
-| Backend | FastAPI, Pydantic, SQLAlchemy |
-| Database | SQLite |
-| Production web server | Nginx |
-| Process manager | systemd |
-| AWS adapter | Mangum (included for Lambda-compatible deployments) |
+| Frontend | React, Vite, JavaScript |
+| Backend (local) | FastAPI, Pydantic, SQLAlchemy |
+| Local database | SQLite |
+| Cloud API layer | AWS API Gateway |
+| Serverless compute | AWS Lambda |
+| Cloud database | Amazon DynamoDB |
+| Frontend hosting | Netlify |
+| Node tooling | npm |
+| Server deployment | EC2 + Nginx + systemd |
 
-## Repository layout
+## Project Structure
 
 ```text
 .
 ├── URL_backend/
-│   ├── main.py                 # FastAPI routes, database model, and redirect logic
-│   └── requirements.txt        # Backend dependencies
+│   ├── main.py
+│   ├── requirements.txt
+│   └── urls.db
 ├── URL_frontend/
-│   ├── src/App.jsx             # Main React interface and API calls
-│   ├── src/App.css             # Application styling
-│   ├── public/                 # Static assets
-│   ├── package.json            # Frontend scripts and dependencies
-│   └── vite.config.js          # Vite configuration
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   ├── vite.config.js
+│   └── README.md
 ├── aws_setup/
-│   ├── ec2_setup.sh            # Ubuntu prerequisites and repository checkout
-│   ├── backend_setup.sh        # Python environment and systemd service setup
-│   ├── frontend_setup.sh       # Nginx configuration and frontend deployment
-│   ├── deploy_frontend.sh      # Rebuild and copy the frontend to Nginx
-│   └── Lambda_function.py      # Alternative DynamoDB-backed Lambda prototype
-├── requirements.txt            # Root-level Python dependency snapshot
-└── README.md
+│   ├── Lambda_function.py
+│   ├── backend_setup.sh
+│   ├── deploy_frontend.sh
+│   ├── ec2_setup.sh
+│   └── frontend_setup.sh
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
-## Prerequisites
+## Architecture
 
-For local development, install:
+### 1. Monolithic version
 
-- Python 3.10 or later
-- Node.js 20 or later (Node.js 22 is used by the EC2 setup script)
+```text
+Browser
+  │
+  ├── React frontend
+  │
+  └── FastAPI backend
+        │
+        └── SQLite database
+```
+
+This version is implemented in [URL_backend/main.py](URL_backend/main.py). It exposes endpoints like:
+
+- POST /shorten
+- GET /all
+- GET /{short_code}
+- DELETE /delete/{short_code}
+
+The app stores URL mappings directly in SQLite and redirects users to the original URL when a short code is visited.
+
+### 2. AWS microservices-style version
+
+```text
+Browser / Netlify Frontend
+        │
+        ▼
+AWS API Gateway
+        │
+        ▼
+AWS Lambda
+        │
+        ▼
+DynamoDB (urls table)
+```
+
+The serverless backend logic is implemented in [aws_setup/Lambda_function.py](aws_setup/Lambda_function.py). It includes:
+
+- POST /shorten
+- GET /all
+- GET /{short_code}
+- DELETE /delete/{short_code}
+
+The Lambda function uses DynamoDB to store original URL and short code pairs, while API Gateway exposes the REST endpoints for the frontend.
+
+This is the microservices-style evolution of the original monolith:
+
+- frontend separated from backend
+- API exposed via gateway instead of direct Python server calls
+- database moved from SQLite to a managed cloud database
+- backend logic moved into Lambda functions
+- frontend deployed via Netlify as a static app
+
+## Features
+
+- Generate six-character short URLs
+- Prevent duplicate long URLs from creating duplicate entries
+- Redirect short links to their original destination
+- List saved short URLs
+- Search and filter URL records in the UI
+- Delete stored entries
+- Works in local development and production environments
+- Supports both monolith and cloud deployments
+
+## Local Development
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
 - npm
 
-## Run locally
-
 ### 1. Start the backend
-
-From the repository root:
 
 ```bash
 cd URL_backend
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
 pip install -r requirements.txt
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-FastAPI starts at `http://127.0.0.1:8000`. The interactive API documentation is available at `http://127.0.0.1:8000/docs`.
+The FastAPI app runs at:
 
-On first startup, SQLAlchemy creates `URL_backend/urls.db`. This is the local SQLite database containing the shortened URL records.
+- http://127.0.0.1:8000
+- Swagger docs: http://127.0.0.1:8000/docs
 
 ### 2. Start the frontend
-
-Open a second terminal:
 
 ```bash
 cd URL_frontend
@@ -104,130 +162,117 @@ npm install
 npm run dev
 ```
 
-Vite prints the local address (normally `http://localhost:5173`). Open it in a browser and submit a URL such as `https://www.example.com`.
+The React app usually runs at:
 
-The frontend's default API endpoint is `http://127.0.0.1:8000`, so no environment file is required for this local setup.
+- http://localhost:5173
 
-## Configuration
+### 3. Example API usage
 
-The frontend reads its API base URL from `VITE_API_URL`:
-
-```bash
-# URL_frontend/.env.local
-VITE_API_URL=http://127.0.0.1:8000
-```
-
-Vite environment values are baked into the build. Restart the development server after changing `.env.local`, and rebuild before deploying a production change.
-
-For the provided Nginx setup, create or use the production value below:
-
-```bash
-# URL_frontend/.env.production
-VITE_API_URL=/api
-```
-
-## API reference
-
-All responses use `original_url`, `short_code`, and `short_url` unless otherwise noted.
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `POST` | `/shorten` | Create or retrieve a short URL |
-| `GET` | `/all` | List all stored URLs |
-| `GET` | `/{short_code}` | Redirect to the original URL |
-| `DELETE` | `/delete/{short_code}` | Delete a short URL |
-
-### Create a short URL
+Create a short URL:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/shorten \
-  -H 'Content-Type: application/json' \
-  -d '{"original_url":"https://www.example.com/a/long/path"}'
+  -H "Content-Type: application/json" \
+  -d '{"original_url":"https://www.example.com/long-path"}'
 ```
 
-Example response:
-
-```json
-{
-  "original_url": "https://www.example.com/a/long/path",
-  "short_code": "aB72xQ",
-  "short_url": "http://localhost:8000/aB72xQ"
-}
-```
-
-### List URLs
+List all URLs:
 
 ```bash
 curl http://127.0.0.1:8000/all
 ```
 
-### Follow a redirect
+Follow redirect:
 
 ```bash
-curl -I http://127.0.0.1:8000/aB72xQ
+curl -I http://127.0.0.1:8000/ABC123
 ```
 
-### Delete a URL
+Delete URL:
 
 ```bash
-curl -X DELETE http://127.0.0.1:8000/delete/aB72xQ
+curl -X DELETE http://127.0.0.1:8000/delete/ABC123
 ```
 
-## Frontend commands
+## AWS Deployment Flow
 
-Run these from `URL_frontend/`:
+### API Gateway + Lambda + DynamoDB
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server with hot reload |
-| `npm run build` | Create a production build in `dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run Oxlint |
+The AWS serverless design is represented by [aws_setup/Lambda_function.py](aws_setup/Lambda_function.py). The flow is:
 
-## EC2 and Nginx deployment
+1. Frontend sends requests to the API Gateway endpoint
+2. API Gateway forwards the request to a Lambda function
+3. Lambda validates the payload and talks to DynamoDB
+4. DynamoDB stores and fetches URL data
+5. Redirect requests return 302 to the original URL
 
-The `aws_setup/` scripts target Ubuntu and assume the repository is cloned to `$HOME/URL_Shortner`. If you clone it elsewhere, update `PROJECT_DIR` in the scripts before running them.
+### DynamoDB table design
 
-1. Launch an Ubuntu EC2 instance and allow inbound TCP port 80 in its security group. For direct backend access, additionally allow port 8000 only when required.
-2. Copy the repository to the instance or run `aws_setup/ec2_setup.sh`. The script installs Git and Python, then clones the repository configured within it.
-3. Run `aws_setup/backend_setup.sh`. It creates a backend virtual environment, installs dependencies, and creates the `url-shortener` systemd service listening on port 8000.
-4. Run `aws_setup/frontend_setup.sh`. It installs Nginx and Node.js, writes `URL_frontend/.env.production` with `VITE_API_URL=/api`, builds the frontend, and configures Nginx to serve the app and proxy `/api/` to FastAPI.
-5. On subsequent frontend-only releases, run `aws_setup/deploy_frontend.sh` to rebuild and copy `dist/` into `/var/www/url-shortener`.
+The Lambda implementation expects a DynamoDB table named `urls` with `short_code` as the key.
 
-Useful service commands:
+Example item:
+
+```json
+{
+  "short_code": "ABC123",
+  "original_url": "https://www.example.com/some-long-link"
+}
+```
+
+### API Gateway configuration
+
+The API should expose endpoints like:
+
+- POST /shorten
+- GET /all
+- GET /{short_code}
+- DELETE /delete/{short_code}
+
+These routes can be mapped to the Lambda function in API Gateway and then connected to the frontend domain.
+
+## Netlify Deployment
+
+The frontend is designed to be deployed to Netlify, allowing it to work as a separate static application. The app calls an API base URL, which is configured through environment variables.
+
+Example:
 
 ```bash
-sudo systemctl status url-shortener
-sudo systemctl restart url-shortener
-sudo journalctl -u url-shortener -f
-
-sudo nginx -t
-sudo systemctl status nginx
-sudo systemctl restart nginx
+VITE_API_URL=https://your-api-gateway-url.amazonaws.com
 ```
 
-## Important production notes
+This lets the frontend remain decoupled from the backend and makes it easy to serve the UI independently from the API.
 
-- **Set the public short-link base URL.** The FastAPI API currently returns short URLs in the form `http://localhost:8000/{short_code}`. That works locally, but a public deployment should derive this value from an environment-configured public base URL (for example, `https://short.example.com`).
-- **SQLite is local to one server.** It is suitable for development or a small single-instance deployment. Use a managed relational database such as PostgreSQL for multi-instance production deployments, backups, and durable storage.
-- **Restrict CORS.** The backend currently permits all origins, methods, and headers. Replace this with the production frontend origin(s).
-- **Use HTTPS.** The included Nginx configuration listens on HTTP only. Add a TLS certificate and redirect HTTP traffic before exposing the service publicly.
-- **Protect management endpoints.** `/all` and `/delete/{short_code}` have no authentication. Add account ownership and authorization before using the application for shared or sensitive data.
-- **Avoid committing local data and environments.** Do not commit `urls.db`, Python virtual environments, frontend `node_modules`, or private `.env` files.
+## EC2 and Nginx Deployment
 
-## Alternative AWS Lambda prototype
+The repo also includes shell scripts for running the app on an Ubuntu EC2 instance with Nginx.
 
-`aws_setup/Lambda_function.py` is a separate, DynamoDB-backed Lambda prototype. It is not wired into the React application or the FastAPI deployment scripts. It handles `POST` and `DELETE` requests and expects a DynamoDB table named `urls` keyed by `short_code`.
+Files in [aws_setup](aws_setup):
 
-Use this path only after configuring API Gateway routes, Lambda permissions, DynamoDB table design, CORS, and a public redirect strategy. The main supported local and EC2 workflow is the FastAPI application in `URL_backend/main.py`.
+- [aws_setup/ec2_setup.sh](aws_setup/ec2_setup.sh) — prepares the instance and clones the repository
+- [aws_setup/backend_setup.sh](aws_setup/backend_setup.sh) — creates the Python environment and runs FastAPI as a systemd service
+- [aws_setup/frontend_setup.sh](aws_setup/frontend_setup.sh) — installs Nginx, builds the React app, and serves it on port 80
+- [aws_setup/deploy_frontend.sh](aws_setup/deploy_frontend.sh) — rebuilds and deploys the frontend
 
-## Current limitations
+This is a traditional deployment option when the monolithic version is needed without serverless components.
 
-- Short codes are randomly generated and are six characters long; collisions are checked before FastAPI records are inserted.
-- There are no user accounts, analytics, expiration dates, rate limits, or custom aliases.
-- The backend returns every stored URL from `/all`; it does not paginate results.
-- The displayed theme button is currently visual only.
+## Why this is a monolith-to-microservices example
+
+This project demonstrates the common transition from a single application to a distributed cloud architecture:
+
+- Started as one full-stack app with frontend, API, and database in one codebase
+- Later split into separate concerns:
+  - frontend on Netlify
+  - API on API Gateway / Lambda
+  - database on DynamoDB
+- The codebase keeps both approaches so the project can be used for learning, testing, and deployment experimentation
+
+## Important Notes
+
+- The local monolithic version uses SQLite, which is great for development but not ideal for large-scale production traffic.
+- The Lambda version is designed for a cloud-native setup and uses DynamoDB for persistence.
+- API security, rate limiting, validation, and HTTPS should be handled in production.
+- For public deployment, use a proper custom domain and set the short URL base to the deployed API domain.
 
 ## License
 
-No license file is included. Add a license before distributing or open-sourcing the project.
+This project does not currently include a license file. Add one before publishing or sharing it beyond personal use.
