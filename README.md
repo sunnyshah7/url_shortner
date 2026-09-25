@@ -2,6 +2,11 @@
 
 A lightweight URL shortener that was first built as a monolithic full-stack application and later adapted into a cloud-based microservices-style deployment. The project includes a React frontend, a FastAPI backend, and AWS-friendly serverless logic using API Gateway, Lambda, and DynamoDB. It can run locally for development and can also be deployed on EC2 or in a cloud-native architecture with Netlify and AWS services.
 
+## Live Demo
+
+- Frontend: https://urlshortner112.netlify.app
+- Custom domain used for backend requests: https://sunnycodes.in
+
 ## Overview
 
 This project lets users:
@@ -120,6 +125,19 @@ This is the microservices-style evolution of the original monolith:
 - backend logic moved into Lambda functions
 - frontend deployed via Netlify as a static app
 
+## Cost-Effective Architecture Highlights
+
+This project was designed with cost efficiency in mind, especially for a learning and small-scale production setup:
+
+- AWS Lambda is used instead of always-on EC2 compute for request handling.
+- DynamoDB is a low-cost NoSQL option for storing short-link mappings instead of maintaining a heavy relational database.
+- API Gateway adds managed API exposure without needing a dedicated backend server for each route.
+- Netlify is used for the frontend so static content can be hosted cheaply and scaled automatically.
+- The custom domain https://sunnycodes.in is used as the public-facing API domain, helping keep the short links clean and readable while routing backend requests through AWS-managed services.
+- The app can still run on a single EC2 instance for monolithic deployment when a lower-cloud-complexity setup is preferred.
+
+This gives a practical balance between feature availability, deployment simplicity, and lower monthly infrastructure cost.
+
 ## Features
 
 - Generate six-character short URLs
@@ -130,6 +148,7 @@ This is the microservices-style evolution of the original monolith:
 - Delete stored entries
 - Works in local development and production environments
 - Supports both monolith and cloud deployments
+- Built with a cost-conscious cloud architecture
 
 ## Local Development
 
@@ -229,6 +248,10 @@ The API should expose endpoints like:
 - DELETE /delete/{short_code}
 
 These routes can be mapped to the Lambda function in API Gateway and then connected to the frontend domain.
+
+The deployed setup uses the custom domain https://sunnycodes.in as the public-facing endpoint for backend traffic, while the frontend is served from https://urlshortner112.netlify.app.
+
+This means the frontend requests are proxied through a domain-friendly API layer instead of exposing raw AWS API Gateway URLs directly to users.
 
 ## Netlify Deployment
 
